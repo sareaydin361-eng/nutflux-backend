@@ -1,5 +1,5 @@
 import { connectDB } from "../../lib/db";
-import Order from "../../models/order"
+import Order from "../../models/order";
 
 export default async function handler(req, res) {
   res.setHeader("Access-Control-Allow-Origin", "*");
@@ -18,26 +18,31 @@ export default async function handler(req, res) {
     const { name, phone, email, address, amount, orderItems, orderId, paymentLink } = req.body;
     console.log("Update Order Request:", req.body);
 
-    // Ensure DB is connected
-
     const db = await connectDB();
 
-    
-    const newOrder = await Order.create({
-      orderId,
-      user: { name, phone, email, address },
-      cart: orderItems,
-      amount,
-      paymentStatus:"SUCCESS",
-      paymentLink
-    });
+    // Check if order already exists
+    let order = await Order.findOne({ orderId });
 
- 
-    await newOrder.save();
+    if (order) {
+      // Order exists → update payment status and link
+      order.paymentStatus = "SUCCESS";
+      order.paymentLink = paymentLink;
+      await order.save();
+      console.log("Order updated to SUCCESS:", order);
+    } else {
+      // Order does not exist → create new record with SUCCESS
+      order = await Order.create({
+        orderId,
+        user: { name, phone, email, address },
+        cart: orderItems,
+        amount,
+        paymentStatus: "SUCCESS",
+        paymentLink
+      });
+      await order.save();
+      console.log("New order created with SUCCESS:", order);
+    }
 
-   
- 
-    console.log("Order updated to SUCCESS:", newOrder);
     return res.status(200).json({ success: true });
   } catch (err) {
     console.error("Update Order Error:", err.message);
