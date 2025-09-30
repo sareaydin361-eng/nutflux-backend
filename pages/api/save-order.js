@@ -44,6 +44,8 @@ export default async function handler(req, res) {
         paymentLink
     });
 
+      console.log("order",newOrder);
+
     res.status(201).json({ 
       success: true, 
       message: "Order saved with status pending", 
