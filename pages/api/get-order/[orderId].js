@@ -1,0 +1,51 @@
+// file: /pages/api/get-order/[orderId].js
+import { connectDB } from "../../../lib/db";// your MongoDB connection helper
+import Order from "../../../models/order"; // your Mongoose model
+import crypto from "crypto";
+
+export default async function handler(req, res) {
+    res.setHeader("Access-Control-Allow-Origin", "*"); // change to frontend domain in prod
+    res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
+    res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
+  
+    if (req.method === "OPTIONS") {
+      return res.status(200).end(); // Preflight OK
+    }
+  const { orderId } = req.query;
+  console.log("Fetching order:", orderId);
+
+  if (req.method !== "GET") {
+    return res.status(405).json({ error: "Method not allowed" });
+  }
+
+  try {
+    await connectDB(); // ensure DB connection
+
+    const order = await Order.findOne({ orderId });
+
+    console.log("Fetched order from DB:", order);
+
+    if (!order) {
+      return res.status(404).json({ error: "Order not found" });
+    }
+
+    // Hash the fields using SHA256
+    const hash = (str) =>
+        crypto.createHash("sha256").update(str).digest("hex");
+  
+      res.status(200).json({
+        orderId: order.orderId,
+        amount: order.amount,
+        hashedName: hash(order.user.name.trim().toLowerCase()),
+     
+        hashedPhone: hash(order.user.phone.replace(/\D/g, "")),
+        hashedAddress: hash(order.user.address.trim()),
+     
+        paymentStatus: order.paymentStatus,
+        createdAt: order.createdAt,
+    });
+  } catch (err) {
+    console.error("❌ Error fetching order:", err);
+    res.status(500).json({ error: "Internal server error" });
+  }
+}
