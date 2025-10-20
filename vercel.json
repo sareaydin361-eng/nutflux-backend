@@ -1,4 +1,4 @@
 {
   "framework": "nextjs",
-  "regions": ["sfo1"]  // San Francisco, for example
+  "regions": ["sfo1"]  
 }
